@@ -1,17 +1,17 @@
 {
-    "name": ":vendor_slug/:package_slug",
-    "description": ":package_description",
+    "name": "xahmedtaha/paybridge",
+    "description": "A versatile laravel package providing a consistent and easy-to-use interface for integrating with multiple payment gateways.",
     "keywords": [
-        ":vendor_name",
+        "Ahmed Taha",
         "laravel",
-        ":package_slug"
+        "paybridge"
     ],
-    "homepage": "https://github.com/:vendor_slug/:package_slug",
+    "homepage": "https://github.com/xahmedtaha/paybridge",
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "Ahmed Taha",
+            "email": "xahmedtaha930@gmail.com",
             "role": "Developer"
         }
     ],
@@ -30,24 +30,23 @@
         "pestphp/pest-plugin-laravel": "^2.3",
         "phpstan/extension-installer": "^1.3",
         "phpstan/phpstan-deprecation-rules": "^1.1",
-        "phpstan/phpstan-phpunit": "^1.3",
-        "spatie/laravel-ray": "^1.35"
+        "phpstan/phpstan-phpunit": "^1.3"
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src/",
-            "VendorName\\Skeleton\\Database\\Factories\\": "database/factories/"
+            "AhmedTaha\\PayBridge\\": "src/",
+            "AhmedTaha\\PayBridge\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests/",
+            "AhmedTaha\\PayBridge\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
     "scripts": {
         "post-autoload-dump": "@composer run prepare",
-        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "clear": "@php vendor/bin/testbench package:purge-paybridge --ansi",
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
         "build": [
             "@composer run prepare",
@@ -73,10 +72,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "VendorName\\Skeleton\\SkeletonServiceProvider"
+                "AhmedTaha\\PayBridge\\PayBridgeServiceProvider"
             ],
             "aliases": {
-                "Skeleton": "VendorName\\Skeleton\\Facades\\Skeleton"
+                "PayBridge": "AhmedTaha\\PayBridge\\Facades\\PayBridge"
             }
         }
     },

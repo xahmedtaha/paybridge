@@ -10,6 +10,7 @@ use AhmedTaha\PayBridge\Interfaces\GatewayInterface;
 abstract class AbstractGateway implements GatewayInterface
 {
     protected array $credentials;
+
     protected mixed $environment;
 
     public function __construct(?array $credentials = null, $environment = null)

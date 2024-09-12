@@ -15,7 +15,9 @@ class ChargeData implements DataInterface
         public string|int $id,
         public string|float|int $amount,
     ) {
-        if (!is_numeric($this->amount)) throw new \Exception('Charge amount must be numeric');
+        if (! is_numeric($this->amount)) {
+            throw new \Exception('Charge amount must be numeric');
+        }
     }
 
     public function getData(): array

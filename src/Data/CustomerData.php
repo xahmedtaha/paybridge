@@ -11,7 +11,7 @@ class CustomerData implements DataInterface
         public ?string $phone,
         public ?string $email,
         public ?string $address,
-    ){}
+    ) {}
 
     public function getData(): array
     {

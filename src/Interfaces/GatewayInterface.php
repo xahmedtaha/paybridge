@@ -9,5 +9,6 @@ use AhmedTaha\PayBridge\Data\CustomerData;
 interface GatewayInterface
 {
     public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData);
+
     public function callback();
 }

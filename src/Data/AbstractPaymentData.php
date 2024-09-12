@@ -2,7 +2,6 @@
 
 namespace AhmedTaha\PayBridge\Data;
 
-use AhmedTaha\PayBridge\Enums\PaymentMethod;
 use AhmedTaha\PayBridge\Interfaces\DataInterface;
 
 abstract class AbstractPaymentData implements DataInterface

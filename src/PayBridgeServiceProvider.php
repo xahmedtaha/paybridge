@@ -4,7 +4,6 @@ namespace AhmedTaha\PayBridge;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use AhmedTaha\PayBridge\Commands\PayBridgeCommand;
 
 class PayBridgeServiceProvider extends PackageServiceProvider
 {

@@ -2,9 +2,9 @@
 
 namespace AhmedTaha\PayBridge\Tests;
 
+use AhmedTaha\PayBridge\PayBridgeServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use AhmedTaha\PayBridge\PayBridgeServiceProvider;
 
 class TestCase extends Orchestra
 {

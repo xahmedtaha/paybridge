@@ -6,18 +6,23 @@ use AhmedTaha\PayBridge\Interfaces\DataInterface;
 
 class ChargeData implements DataInterface
 {
-    public mixed $paymentMethod;
-
     /**
      * @throws \Exception
      */
     public function __construct(
         public string|int $id,
         public string|float|int $amount,
+        public ?string $currency = null,
     ) {
         if (! is_numeric($this->amount)) {
             throw new \Exception('Charge amount must be numeric');
         }
+        if ($this->currency) {
+            if (! in_array($this->currency, array_keys(config('paybridge.currencies'))))
+                throw new \Exception('Currency is invalid or not supported');
+        } else if (! config('paybridge.default_currency') || ! in_array(config('paybridge.default_currency'), array_keys(config('paybridge.currencies')))) {
+            throw new \Exception('Currency is invalid or not supported');
+        } else $this->currency = config('paybridge.default_currency');
     }
 
     public function getData(): array
@@ -25,6 +30,7 @@ class ChargeData implements DataInterface
         return [
             'id' => $this->id,
             'amount' => number_format(floatval($this->amount), 2, '.', ''),
+            'currency' => $this->currency,
         ];
     }
 }

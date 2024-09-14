@@ -15,8 +15,11 @@ use Illuminate\Support\Str;
 class FawryPayGateway extends AbstractGateway
 {
     protected array $supportedIntegrationTypes = ['hosted', 'api'];
+
     protected array $supportedPaymentMethods = [PaymentMethod::CREDIT_CARD, PaymentMethod::MOBILE_WALLET, PaymentMethod::NONE];
+
     protected string $apiUrl;
+
     protected string $integrationType;
 
     /**
@@ -35,7 +38,10 @@ class FawryPayGateway extends AbstractGateway
     protected function getIntegrationType(): string
     {
         $type = config('paybridge.integration_type');
-        if (! in_array($type, $this->supportedIntegrationTypes)) throw new \Exception('Unsupported integration type');
+        if (! in_array($type, $this->supportedIntegrationTypes)) {
+            throw new \Exception('Unsupported integration type');
+        }
+
         return $type;
     }
 
@@ -87,10 +93,10 @@ class FawryPayGateway extends AbstractGateway
             'language' => 'en-gb',
             'chargeItems' => [
                 [
-                    "itemId" => (string) rand(000000, 999999),
-                    "price" => $charge['amount'],
-                    "quantity" => "1",
-                ]
+                    'itemId' => (string) rand(000000, 999999),
+                    'price' => $charge['amount'],
+                    'quantity' => '1',
+                ],
             ],
             'returnUrl' => $this->getCallbackUrl(),
         ];
@@ -103,10 +109,9 @@ class FawryPayGateway extends AbstractGateway
                 'chargeItems.0.itemId',
                 'chargeItems.0.quantity',
                 'chargeItems.0.price',
-                'secretKey'
+                'secretKey',
             ]);
-        }
-        else if ($integrationType == 'api') {
+        } elseif ($integrationType == 'api') {
             $data = array_merge($data, [
                 'amount' => $charge['amount'],
                 'authCaptureModePayment' => false,
@@ -132,7 +137,7 @@ class FawryPayGateway extends AbstractGateway
                     'cardExpiryMonth',
                     'cvv',
                     'returnUrl',
-                    'secretKey'
+                    'secretKey',
                 ]);
             } elseif ($paymentData::METHOD == PaymentMethod::MOBILE_WALLET) {
                 $walletData = $paymentData->getData();
@@ -147,7 +152,7 @@ class FawryPayGateway extends AbstractGateway
                     'paymentMethod',
                     'amount',
                     'debitMobileWalletNo',
-                    'secretKey'
+                    'secretKey',
                 ]);
             } else {
                 $data['paymentMethod'] = 'PAYATFAWRY';
@@ -157,10 +162,11 @@ class FawryPayGateway extends AbstractGateway
                     'customerProfileId',
                     'paymentMethod',
                     'amount',
-                    'secretKey'
+                    'secretKey',
                 ]);
             }
         }
+
         return $data;
     }
 
@@ -170,16 +176,22 @@ class FawryPayGateway extends AbstractGateway
      */
     public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData): array
     {
-        if (! in_array($paymentData::METHOD, $this->supportedPaymentMethods)) throw new \Exception('Unsupported Payment Method For FawryPay');
+        if (! in_array($paymentData::METHOD, $this->supportedPaymentMethods)) {
+            throw new \Exception('Unsupported Payment Method For FawryPay');
+        }
 
         $requestData = $this->generateRequestData($chargeData, $customerData, $paymentData, $this->integrationType);
-        if ($this->integrationType == 'hosted') return $this->payViaHostedCheckout($requestData, $paymentData);
-        else if ($this->integrationType == 'api') return $this->payViaApi($requestData, $paymentData);
-        else return [
-            'success' => false,
-            'status' => PaymentStatus::UNPAID,
-            'error' => 'Something went wrong',
-        ];
+        if ($this->integrationType == 'hosted') {
+            return $this->payViaHostedCheckout($requestData, $paymentData);
+        } elseif ($this->integrationType == 'api') {
+            return $this->payViaApi($requestData, $paymentData);
+        } else {
+            return [
+                'success' => false,
+                'status' => PaymentStatus::UNPAID,
+                'error' => 'Something went wrong',
+            ];
+        }
     }
 
     /**
@@ -191,7 +203,9 @@ class FawryPayGateway extends AbstractGateway
         $response = Http::post($this->apiUrl, $requestData)->throw();
 
         $redirectionUrl = $response->body();
-        if (! Str::isUrl($redirectionUrl)) throw new \Exception('Fawry Redirection URL Not Available Or Invalid (given: '.$redirectionUrl.')');
+        if (! Str::isUrl($redirectionUrl)) {
+            throw new \Exception('Fawry Redirection URL Not Available Or Invalid (given: '.$redirectionUrl.')');
+        }
 
         return [
             'success' => true,
@@ -217,7 +231,10 @@ class FawryPayGateway extends AbstractGateway
 
         if ($paymentData::METHOD == PaymentMethod::CREDIT_CARD) {
             $redirectionUrl = data_get($responseData, 'nextAction.redirectUrl');
-            if (!$redirectionUrl) throw new \Exception('Fawry Redirection URL Not Available');
+            if (! $redirectionUrl) {
+                throw new \Exception('Fawry Redirection URL Not Available');
+            }
+
             return [
                 'success' => true,
                 'status' => PaymentStatus::PENDING,
@@ -227,7 +244,10 @@ class FawryPayGateway extends AbstractGateway
         }
 
         $referenceNumber = data_get($responseData, 'referenceNumber');
-        if (!$referenceNumber || $responseData['statusCode'] != "200") throw new \Exception('Fawry invoice reference number not available');
+        if (! $referenceNumber || $responseData['statusCode'] != '200') {
+            throw new \Exception('Fawry invoice reference number not available');
+        }
+
         return [
             'success' => true,
             'status' => PaymentStatus::PENDING,
@@ -238,9 +258,12 @@ class FawryPayGateway extends AbstractGateway
 
     protected function generateSignature(array $data, ?array $fieldNames = null): string
     {
-        if (!$fieldNames) return hash('sha256', implode('', $data));
+        if (! $fieldNames) {
+            return hash('sha256', implode('', $data));
+        }
+
         return hash('sha256', array_reduce($fieldNames, function ($carry, $fieldName) use ($data) {
-            return $carry . data_get($data, $fieldName);
+            return $carry.data_get($data, $fieldName);
         }, ''));
     }
 

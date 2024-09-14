@@ -127,6 +127,6 @@ return [
         'VEF' => 'Venezuela Bolivar',
         'VND' => 'Viet Nam Dong',
         'YER' => 'Yemen Rial',
-        'ZWD' => 'Zimbabwe Dollar'
+        'ZWD' => 'Zimbabwe Dollar',
     ],
 ];

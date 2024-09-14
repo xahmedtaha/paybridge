@@ -369,12 +369,12 @@ class FawryPayGateway extends AbstractGateway
             ];
         }
 
-        return [
-            'success' => true,
-            'status' => PaymentStatus::PAID,
-            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNum), $request->orderAmount),
-            'customer' => new CustomerData($request->customerMerchantId, $request->customerName, $request->customerMobile, $request->customerMail),
-            'referenceNumber' => $request->fawryRefNumber,
-        ];
+//        return [
+//            'success' => true,
+//            'status' => PaymentStatus::PAID,
+//            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNum), $request->orderAmount),
+//            'customer' => new CustomerData($request->customerMerchantId, $request->customerName, $request->customerMobile, $request->customerMail),
+//            'referenceNumber' => $request->fawryRefNumber,
+//        ];
     }
 }

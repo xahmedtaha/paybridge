@@ -2,9 +2,9 @@
 
 namespace AhmedTaha\PayBridge\Interfaces;
 
-use AhmedTaha\PayBridge\Data\AbstractPaymentData;
 use AhmedTaha\PayBridge\Data\ChargeData;
 use AhmedTaha\PayBridge\Data\CustomerData;
+use AhmedTaha\PayBridge\Data\Payment\AbstractPaymentData;
 use Illuminate\Http\Request;
 
 interface GatewayInterface

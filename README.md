@@ -25,12 +25,7 @@ php artisan vendor:publish --tag="paybridge-config"
 You should typically use the package as follows:
 
 ```php
-use PayBridge;
-use AhmedTaha\PayBridge\Enums\PaymentGateway;
-use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
-use AhmedTaha\PayBridge\Data\ChargeData;
-use AhmedTaha\PayBridge\Data\CustomerData;
-use AhmedTaha\PayBridge\Data\CreditCardData;
+use AhmedTaha\PayBridge\Data\ChargeData;use AhmedTaha\PayBridge\Data\CustomerData;use AhmedTaha\PayBridge\Data\Payment\CreditCardData;use AhmedTaha\PayBridge\Enums\PaymentEnvironment;use AhmedTaha\PayBridge\Enums\PaymentGateway;
 
 $charge = new ChargeData('charge ID', 200, 'USD');
 $customer = new CustomerData('customer ID', 'Ahmed', 'phone', 'email@test.com');

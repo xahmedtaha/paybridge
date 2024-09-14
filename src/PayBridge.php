@@ -15,7 +15,7 @@ class PayBridge {
 
     public function gateway(PaymentGateway $gateway): AbstractGateway
     {
-        return app($gateway, ['credentials' => $this->credentials, 'environment' => $this->environment]);
+        return app($gateway->value, ['credentials' => $this->credentials, 'environment' => $this->environment]);
     }
 
     public function setPaymentEnvironment(PaymentEnvironment $environment): self

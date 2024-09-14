@@ -2,10 +2,10 @@
 
 namespace AhmedTaha\PayBridge\Gateways;
 
-use AhmedTaha\PayBridge\Data\AbstractPaymentData;
 use AhmedTaha\PayBridge\Data\ChargeData;
 use AhmedTaha\PayBridge\Data\CustomerData;
-use AhmedTaha\PayBridge\Data\NoPaymentData;
+use AhmedTaha\PayBridge\Data\Payment\AbstractPaymentData;
+use AhmedTaha\PayBridge\Data\Payment\NoPaymentData;
 use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
 use AhmedTaha\PayBridge\Enums\PaymentMethod;
 use AhmedTaha\PayBridge\Enums\PaymentStatus;
@@ -41,7 +41,7 @@ class FawryPayGateway extends AbstractGateway
      */
     protected function getIntegrationType(): string
     {
-        $type = config('paybridge.integration_type');
+        $type = config('paybridge.gateways.fawrypay.integration_type');
         if (! in_array($type, $this->supportedIntegrationTypes)) {
             throw new \Exception('Unsupported integration type');
         }
@@ -100,7 +100,7 @@ class FawryPayGateway extends AbstractGateway
             'language' => 'en-gb',
             'chargeItems' => [
                 [
-                    'itemId' => (string) rand(000000, 999999),
+                    'itemId' => (string) bin2hex(random_bytes(5)),
                     'price' => $charge['amount'],
                     'quantity' => '1',
                 ],
@@ -294,6 +294,11 @@ class FawryPayGateway extends AbstractGateway
      */
     protected function verifyCallbackSignature(string $signature, array $data): void
     {
+        foreach (['paymentAmount', 'orderAmount', 'fawryFees', 'shippingFees'] as $key) {
+            if (isset($data[$key])) {
+                $data[$key] = $this->formatNumber($data[$key]);
+            }
+        }
         if ($signature !== $this->generateSignature($data, [
                 'referenceNumber',
                 'merchantRefNum',
@@ -316,6 +321,11 @@ class FawryPayGateway extends AbstractGateway
      */
     protected function verifyWebhookSignature(string $signature, array $data): void
     {
+        foreach (['paymentAmount', 'orderAmount'] as $key) {
+            if (isset($data[$key])) {
+                $data[$key] = $this->formatNumber($data[$key]);
+            }
+        }
         if ($signature !== $this->generateSignature($data, [
                 'fawryRefNumber',
                 'merchantRefNum',
@@ -327,6 +337,12 @@ class FawryPayGateway extends AbstractGateway
             ])) {
             throw new \Exception('Invalid Signature');
         }
+    }
+
+    protected function formatNumber($number): string
+    {
+        if (is_numeric($number)) return number_format($number, 2, '.', '');
+        return $number;
     }
 
     /**
@@ -345,7 +361,7 @@ class FawryPayGateway extends AbstractGateway
 
         return [
             'success' => true,
-            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNum), $request->orderAmount),
+            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNumber), $request->orderAmount),
             'customer' => new CustomerData($request->customerProfileId, null, $request->customerMobile, $request->customerMail),
             'referenceNumber' => $request->referenceNumber,
             'status' => PaymentStatus::PAID,
@@ -369,12 +385,12 @@ class FawryPayGateway extends AbstractGateway
             ];
         }
 
-//        return [
-//            'success' => true,
-//            'status' => PaymentStatus::PAID,
-//            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNum), $request->orderAmount),
-//            'customer' => new CustomerData($request->customerMerchantId, $request->customerName, $request->customerMobile, $request->customerMail),
-//            'referenceNumber' => $request->fawryRefNumber,
-//        ];
+        return [
+            'success' => true,
+            'status' => PaymentStatus::PAID,
+            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNumber), $request->orderAmount),
+            'customer' => new CustomerData($request->customerMerchantId, $request->customerName, $request->customerMobile, $request->customerMail),
+            'referenceNumber' => $request->fawryRefNumber,
+        ];
     }
 }

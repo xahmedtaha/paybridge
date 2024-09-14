@@ -1,6 +1,6 @@
 <?php
 
-namespace AhmedTaha\PayBridge\Data;
+namespace AhmedTaha\PayBridge\Data\Payment;
 
 use AhmedTaha\PayBridge\Enums\PaymentMethod;
 

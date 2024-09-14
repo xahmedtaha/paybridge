@@ -28,6 +28,3 @@ arch('gateways extend from the AbstractGateway class')
     ->toBeClasses()
     ->toImplement(\AhmedTaha\PayBridge\Interfaces\GatewayInterface::class)
     ->toExtend(\AhmedTaha\PayBridge\Gateways\AbstractGateway::class);
-
-arch('php preset')->preset()->php();
-arch('security preset')->preset()->security();

@@ -16,6 +16,7 @@ class FawryPayGateway extends AbstractGateway
 {
     protected array $supportedIntegrationTypes = ['hosted', 'api'];
 
+    // The "NONE" method corresponds to the PayAtFawry method
     protected array $supportedPaymentMethods = [PaymentMethod::CREDIT_CARD, PaymentMethod::MOBILE_WALLET, PaymentMethod::NONE];
 
     protected string $apiUrl;

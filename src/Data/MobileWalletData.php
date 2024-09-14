@@ -2,7 +2,6 @@
 
 namespace AhmedTaha\PayBridge\Data;
 
-use AhmedTaha\PayBridge\Data\AbstractPaymentData;
 use AhmedTaha\PayBridge\Enums\PaymentMethod;
 
 class MobileWalletData extends AbstractPaymentData

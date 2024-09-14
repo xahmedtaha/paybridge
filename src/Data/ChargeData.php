@@ -18,11 +18,14 @@ class ChargeData implements DataInterface
             throw new \Exception('Charge amount must be numeric');
         }
         if ($this->currency) {
-            if (! in_array($this->currency, array_keys(config('paybridge.currencies'))))
+            if (! in_array($this->currency, array_keys(config('paybridge.currencies')))) {
                 throw new \Exception('Currency is invalid or not supported');
-        } else if (! config('paybridge.default_currency') || ! in_array(config('paybridge.default_currency'), array_keys(config('paybridge.currencies')))) {
+            }
+        } elseif (! config('paybridge.default_currency') || ! in_array(config('paybridge.default_currency'), array_keys(config('paybridge.currencies')))) {
             throw new \Exception('Currency is invalid or not supported');
-        } else $this->currency = config('paybridge.default_currency');
+        } else {
+            $this->currency = config('paybridge.default_currency');
+        }
     }
 
     public function getData(): array

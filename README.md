@@ -2,9 +2,10 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/xahmedtaha/paybridge.svg?style=flat-square)](https://packagist.org/packages/xahmedtaha/paybridge)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/xahmedtaha/paybridge/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/xahmedtaha/paybridge/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/xahmedtaha/paybridge.svg?style=flat-square)](https://packagist.org/packages/xahmedtaha/paybridge)
 
 [//]: # ([![GitHub Code Style Action Status]&#40;https://img.shields.io/github/actions/workflow/status/xahmedtaha/paybridge/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square&#41;]&#40;https://github.com/xahmedtaha/paybridge/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain&#41;)
-[![Total Downloads](https://img.shields.io/packagist/dt/xahmedtaha/paybridge.svg?style=flat-square)](https://packagist.org/packages/xahmedtaha/paybridge)
+
 
 A versatile laravel package providing a consistent and easy-to-use interface for integrating with multiple payment gateways.
 ## Installation

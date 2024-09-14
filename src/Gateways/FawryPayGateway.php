@@ -5,18 +5,21 @@ namespace AhmedTaha\PayBridge\Gateways;
 use AhmedTaha\PayBridge\Data\AbstractPaymentData;
 use AhmedTaha\PayBridge\Data\ChargeData;
 use AhmedTaha\PayBridge\Data\CustomerData;
+use AhmedTaha\PayBridge\Data\NoPaymentData;
 use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
 use AhmedTaha\PayBridge\Enums\PaymentMethod;
 use AhmedTaha\PayBridge\Enums\PaymentStatus;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Random\RandomException;
 
 class FawryPayGateway extends AbstractGateway
 {
     protected array $supportedIntegrationTypes = ['hosted', 'api'];
 
-    // The "NONE" method corresponds to the PayAtFawry method
+    // The "NONE" method corresponds to the PayAtFawry method in the api integration
     protected array $supportedPaymentMethods = [PaymentMethod::CREDIT_CARD, PaymentMethod::MOBILE_WALLET, PaymentMethod::NONE];
 
     protected string $apiUrl;
@@ -79,6 +82,9 @@ class FawryPayGateway extends AbstractGateway
         return PaymentEnvironment::from(config('paybridge.gateways.fawrypay.environment'));
     }
 
+    /**
+     * @throws RandomException
+     */
     protected function generateRequestData(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData, string $integrationType): array
     {
         $customer = $customerData->getData();
@@ -86,7 +92,7 @@ class FawryPayGateway extends AbstractGateway
         $data = [
             'description' => '',
             'merchantCode' => $this->credentials['merchant_id'],
-            'merchantRefNum' => $charge['id'].'-'.uniqid(),
+            'merchantRefNum' => $this->generatePaymentId($charge['id']),
             'customerProfileId' => $customer['id'],
             'customerName' => $customer['name'],
             'customerMobile' => $customer['phone'],
@@ -102,7 +108,7 @@ class FawryPayGateway extends AbstractGateway
             'returnUrl' => $this->getCallbackUrl(),
         ];
         if ($integrationType == 'hosted') {
-            $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+            $data['signature'] = $this->generateSignature($data, [
                 'merchantCode',
                 'merchantRefNum',
                 'customerProfileId',
@@ -127,7 +133,7 @@ class FawryPayGateway extends AbstractGateway
                     'cardExpiryMonth' => $ccData['expiryMonth'],
                     'cvv' => $ccData['cvv'],
                 ]);
-                $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+                $data['signature'] = $this->generateSignature($data, [
                     'merchantCode',
                     'merchantRefNum',
                     'customerProfileId',
@@ -146,7 +152,7 @@ class FawryPayGateway extends AbstractGateway
                     'paymentMethod' => 'MWALLET',
                     'debitMobileWalletNo' => $walletData['walletNumber'],
                 ]);
-                $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+                $data['signature'] = $this->generateSignature($data, [
                     'merchantCode',
                     'merchantRefNum',
                     'customerProfileId',
@@ -157,7 +163,7 @@ class FawryPayGateway extends AbstractGateway
                 ]);
             } else {
                 $data['paymentMethod'] = 'PAYATFAWRY';
-                $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+                $data['signature'] = $this->generateSignature($data, [
                     'merchantCode',
                     'merchantRefNum',
                     'customerProfileId',
@@ -175,7 +181,7 @@ class FawryPayGateway extends AbstractGateway
      * @throws RequestException
      * @throws \Exception
      */
-    public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData): array
+    public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData = new NoPaymentData): array
     {
         if (! in_array($paymentData::METHOD, $this->supportedPaymentMethods)) {
             throw new \Exception('Unsupported Payment Method For FawryPay');
@@ -257,24 +263,118 @@ class FawryPayGateway extends AbstractGateway
         ];
     }
 
+    /**
+     * @throws RandomException
+     */
+    protected function generatePaymentId(string $id): string
+    {
+        return $id . bin2hex(random_bytes(5));
+    }
+
+    protected function extractPaymentId(string $paymentId): string
+    {
+        return substr($paymentId, 0, -10);
+    }
+
     protected function generateSignature(array $data, ?array $fieldNames = null): string
     {
         if (! $fieldNames) {
-            return hash('sha256', implode('', $data));
+            $plainTextSignature = implode('', $data);
+        } else {
+            $plainTextSignature = array_reduce($fieldNames, function ($carry, $fieldName) use ($data) {
+                return $carry.data_get($data, $fieldName);
+            }, '');
+        }
+        $plainTextSignature .= $this->credentials['secret_key'];
+        return hash('sha256', $plainTextSignature);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function verifyCallbackSignature(string $signature, array $data): void
+    {
+        if ($signature !== $this->generateSignature($data, [
+                'referenceNumber',
+                'merchantRefNum',
+                'paymentAmount',
+                'orderAmount',
+                'orderStatus',
+                'paymentMethod',
+                'fawryFees',
+                'shippingFees',
+                'authNumber',
+                'customerMail',
+                'customerMobile',
+            ])) {
+            throw new \Exception('Invalid Signature');
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function verifyWebhookSignature(string $signature, array $data): void
+    {
+        if ($signature !== $this->generateSignature($data, [
+                'fawryRefNumber',
+                'merchantRefNum',
+                'paymentAmount',
+                'orderAmount',
+                'orderStatus',
+                'paymentMethod',
+                'paymentReferenceNumber',
+            ])) {
+            throw new \Exception('Invalid Signature');
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function callback(Request $request): array
+    {
+        $this->verifyCallbackSignature($request->signature, $request->toArray());
+        if ($request->statusCode != '200' || $request->orderStatus != 'PAID') {
+            return [
+                'success' => false,
+                'status' => PaymentStatus::UNPAID,
+                'message' => $request->statusDescription,
+            ];
         }
 
-        return hash('sha256', array_reduce($fieldNames, function ($carry, $fieldName) use ($data) {
-            return $carry.data_get($data, $fieldName);
-        }, ''));
+        return [
+            'success' => true,
+            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNum), $request->orderAmount),
+            'customer' => new CustomerData($request->customerProfileId, null, $request->customerMobile, $request->customerMail),
+            'referenceNumber' => $request->referenceNumber,
+            'status' => PaymentStatus::PAID,
+        ];
     }
 
-    public function verify()
+    /**
+     * @throws \Exception
+     */
+    public function handleWebhook(Request $request): array
     {
-        // TODO: Implement verify() method.
-    }
+        $this->verifyWebhookSignature($request->messageSignature, $request->toArray());
+        if ($request->orderStatus != 'PAID') {
+            return [
+                'success' => $request->orderStatus != 'PAID' && $request->orderStatus != 'NEW',
+                'status' => match ($request->orderStatus) {
+                    'UNPAID', 'CANCELED', 'REFUNDED', 'EXPIRED', 'PARTIAL_REFUNDED', 'FAILED' => PaymentStatus::UNPAID,
+                    default => PaymentStatus::PENDING
+                },
+                'message' => $request->statusDescription,
+            ];
+        }
 
-    public function callback()
-    {
-        // TODO: Implement callback() method.
+        return [
+            'success' => true,
+            'status' => PaymentStatus::PAID,
+            'charge' => new ChargeData($this->extractPaymentId($request->merchantRefNum), $request->orderAmount),
+            'customer' => new CustomerData($request->customerMerchantId, $request->customerName, $request->customerMobile, $request->customerMail),
+            'referenceNumber' => $request->fawryRefNumber,
+        ];
     }
 }

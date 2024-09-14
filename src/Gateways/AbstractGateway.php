@@ -7,6 +7,7 @@ use AhmedTaha\PayBridge\Data\ChargeData;
 use AhmedTaha\PayBridge\Data\CustomerData;
 use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
 use AhmedTaha\PayBridge\Interfaces\GatewayInterface;
+use Illuminate\Http\Request;
 
 abstract class AbstractGateway implements GatewayInterface
 {
@@ -24,9 +25,7 @@ abstract class AbstractGateway implements GatewayInterface
 
     abstract protected function getPaymentEnvironment(): PaymentEnvironment;
 
-    abstract public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData);
+    abstract public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData): array;
 
-    abstract public function verify();
-
-    abstract public function callback();
+    abstract public function callback(Request $request);
 }

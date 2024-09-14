@@ -10,9 +10,9 @@ class ChargeData implements DataInterface
      * @throws \Exception
      */
     public function __construct(
-        public string|int $id,
-        public string|float|int $amount,
-        public ?string $currency = null,
+        protected string|int $id,
+        protected string|float|int $amount,
+        protected ?string $currency = null,
     ) {
         if (! is_numeric($this->amount)) {
             throw new \Exception('Charge amount must be numeric');

@@ -6,13 +6,13 @@ use AhmedTaha\PayBridge\Enums\PaymentMethod;
 
 class CreditCardData extends AbstractPaymentData
 {
-    public mixed $paymentMethod = PaymentMethod::CREDIT_CARD;
+    const METHOD = PaymentMethod::CREDIT_CARD;
 
     public function __construct(
-        public string|int $cardNumber,
-        public string|int $expiryYear,
-        public string|int $expiryMonth,
-        public string|int $cvv,
+        protected string|int $cardNumber,
+        protected string|int $expiryYear,
+        protected string|int $expiryMonth,
+        protected string|int $cvv,
     ) {}
 
     public function getData(): array

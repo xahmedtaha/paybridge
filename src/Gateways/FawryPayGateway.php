@@ -8,14 +8,14 @@ use AhmedTaha\PayBridge\Data\CustomerData;
 use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
 use AhmedTaha\PayBridge\Enums\PaymentMethod;
 use AhmedTaha\PayBridge\Enums\PaymentStatus;
-use AhmedTaha\PayBridge\Gateways\AbstractGateway;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class FawryPayGateway extends AbstractGateway
 {
     protected array $supportedIntegrationTypes = ['hosted', 'api'];
+    protected array $supportedPaymentMethods = [PaymentMethod::CREDIT_CARD, PaymentMethod::MOBILE_WALLET, PaymentMethod::NONE];
     protected string $apiUrl;
     protected string $integrationType;
 
@@ -72,28 +72,111 @@ class FawryPayGateway extends AbstractGateway
         return PaymentEnvironment::from(config('paybridge.gateways.fawrypay.environment'));
     }
 
-    /**
-     * @throws RequestException
-     */
-    public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData): array
+    protected function generateRequestData(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData, string $integrationType): array
     {
-        $requestData = [
-            'merchantRefNum' => $chargeData->id.'-'.uniqid(),
-            'customerMobile' => $customerData->phone,
-            'customerEmail' => $customerData->email,
+        $customer = $customerData->getData();
+        $charge = $chargeData->getData();
+        $data = [
+            'description' => '',
+            'merchantCode' => $this->credentials['merchant_id'],
+            'merchantRefNum' => $charge['id'].'-'.uniqid(),
+            'customerProfileId' => $customer['id'],
+            'customerName' => $customer['name'],
+            'customerMobile' => $customer['phone'],
+            'customerEmail' => $customer['email'],
+            'language' => 'en-gb',
             'chargeItems' => [
                 [
                     "itemId" => (string) rand(000000, 999999),
-                    "price" => $chargeData->amount,
+                    "price" => $charge['amount'],
                     "quantity" => "1",
                 ]
             ],
-            'language' => 'en-gb',
             'returnUrl' => $this->getCallbackUrl(),
         ];
-        if ($this->integrationType == 'hosted') return $this->payViaHostedCheckout($requestData);
-        else if ($this->integrationType == 'api') return $this->payViaApi($requestData, $chargeData, $paymentData);
+        if ($integrationType == 'hosted') {
+            $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+                'merchantCode',
+                'merchantRefNum',
+                'customerProfileId',
+                'returnUrl',
+                'chargeItems.0.itemId',
+                'chargeItems.0.quantity',
+                'chargeItems.0.price',
+                'secretKey'
+            ]);
+        }
+        else if ($integrationType == 'api') {
+            $data = array_merge($data, [
+                'amount' => $charge['amount'],
+                'authCaptureModePayment' => false,
+                'enable3DS' => true,
+            ]);
+            if ($paymentData::METHOD == PaymentMethod::CREDIT_CARD) {
+                $ccData = $paymentData->getData();
+                $data = array_merge($data, [
+                    'paymentMethod' => 'PayUsingCC',
+                    'cardNumber' => $ccData['cardNumber'],
+                    'cardExpiryYear' => $ccData['expiryYear'],
+                    'cardExpiryMonth' => $ccData['expiryMonth'],
+                    'cvv' => $ccData['cvv'],
+                ]);
+                $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+                    'merchantCode',
+                    'merchantRefNum',
+                    'customerProfileId',
+                    'paymentMethod',
+                    'amount',
+                    'cardNumber',
+                    'cardExpiryYear',
+                    'cardExpiryMonth',
+                    'cvv',
+                    'returnUrl',
+                    'secretKey'
+                ]);
+            } elseif ($paymentData::METHOD == PaymentMethod::MOBILE_WALLET) {
+                $walletData = $paymentData->getData();
+                $data = array_merge($data, [
+                    'paymentMethod' => 'MWALLET',
+                    'debitMobileWalletNo' => $walletData['walletNumber'],
+                ]);
+                $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+                    'merchantCode',
+                    'merchantRefNum',
+                    'customerProfileId',
+                    'paymentMethod',
+                    'amount',
+                    'debitMobileWalletNo',
+                    'secretKey'
+                ]);
+            } else {
+                $data['paymentMethod'] = 'PAYATFAWRY';
+                $data['signature'] = $this->generateSignature([...$data, 'secretKey' => $this->credentials['secret_key']], [
+                    'merchantCode',
+                    'merchantRefNum',
+                    'customerProfileId',
+                    'paymentMethod',
+                    'amount',
+                    'secretKey'
+                ]);
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * @throws RequestException
+     * @throws \Exception
+     */
+    public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData): array
+    {
+        if (! in_array($paymentData::METHOD, $this->supportedPaymentMethods)) throw new \Exception('Unsupported Payment Method For FawryPay');
+
+        $requestData = $this->generateRequestData($chargeData, $customerData, $paymentData, $this->integrationType);
+        if ($this->integrationType == 'hosted') return $this->payViaHostedCheckout($requestData, $paymentData);
+        else if ($this->integrationType == 'api') return $this->payViaApi($requestData, $paymentData);
         else return [
+            'success' => false,
             'status' => PaymentStatus::UNPAID,
             'error' => 'Something went wrong',
         ];
@@ -103,24 +186,17 @@ class FawryPayGateway extends AbstractGateway
      * @throws RequestException
      * @throws \Exception
      */
-    protected function payViaHostedCheckout(array $requestData): array
+    protected function payViaHostedCheckout(array $requestData, AbstractPaymentData $paymentData): array
     {
-        $data = $requestData;
-
-        $signature = $requestData['merchantCode'].$requestData['merchantRefNum'].$requestData['returnUrl'];
-        $signature .= array_reduce($requestData['chargeItems'], function ($carry, $item) {
-            return $carry . $item['itemId'] . $item['quantity'] . $item['price'];
-        });
-        $signature .= $this->credentials['secret_key'];
-        $data['signature'] = hash('sha256', $signature);
-
-        $response = Http::post($this->apiUrl, $data)->throw();
+        $response = Http::post($this->apiUrl, $requestData)->throw();
 
         $redirectionUrl = $response->body();
-        if (!$redirectionUrl) throw new \Exception('Fawry Redirection URL Not Available');
+        if (! Str::isUrl($redirectionUrl)) throw new \Exception('Fawry Redirection URL Not Available Or Invalid (given: '.$redirectionUrl.')');
 
         return [
+            'success' => true,
             'status' => PaymentStatus::PENDING,
+            'shouldRedirect' => true,
             'redirectUrl' => $redirectionUrl,
         ];
     }
@@ -129,49 +205,43 @@ class FawryPayGateway extends AbstractGateway
      * @throws RequestException
      * @throws \Exception
      */
-    protected function payViaApi(array $requestData, ChargeData $chargeData, AbstractPaymentData $paymentData): array
+    protected function payViaApi(array $requestData, AbstractPaymentData $paymentData): array
     {
-        $data = $data = array_merge($requestData, [
-            'amount' => $chargeData->amount,
-            'paymentMethod' => 'PayUsingCC',
-            'authCaptureModePayment' => false,
-            'enable3DS' => true,
-        ]);
+        $response = Http::post($this->apiUrl, $requestData)->throw();
 
-        if ($paymentData->paymentMethod == PaymentMethod::CREDIT_CARD) {
-            $ccData = $paymentData->getData();
-            $data = array_merge($data, [
-                'cardNumber' => $ccData['cardNumber'],
-                'cardExpiryYear' => $ccData['expiryYear'],
-                'cardExpiryMonth' => $ccData['expiryMonth'],
-                'cvv' => $ccData['cvv'],
-            ]);
+        $responseData = $response->json();
+
+        if ($responseData['statusCode'] != '200') {
+            throw new \Exception($responseData['statusDescription']);
         }
 
-        $signature = $requestData['merchantCode']
-            .$requestData['merchantRefNum']
-            .$requestData['paymentMethod']
-            .$requestData['amount']
-            .($requestData['paymentMethod'] === 'PayUsingCC' ? $requestData['cardNumber'] .$requestData['cardExpiryYear'] .$requestData['cardExpiryMonth'] .$requestData['cvv'] : '')
-            .$requestData['returnUrl']
-            .($requestData['paymentMethod'] === 'MWALLET' ? $requestData['debitMobileWalletNo'] : '')
-            .$this->credentials['secret_key'];
+        if ($paymentData::METHOD == PaymentMethod::CREDIT_CARD) {
+            $redirectionUrl = data_get($responseData, 'nextAction.redirectUrl');
+            if (!$redirectionUrl) throw new \Exception('Fawry Redirection URL Not Available');
+            return [
+                'success' => true,
+                'status' => PaymentStatus::PENDING,
+                'shouldRedirect' => true,
+                'redirectUrl' => $redirectionUrl,
+            ];
+        }
 
-        $data['signature'] = hash('sha256', $signature);
-
-        $response = Http::post($this->apiUrl, $data)->throw();
-        $redirectionUrl = data_get($response->json(), 'nextAction.redirectUrl');
-        if (!$redirectionUrl) throw new \Exception('Fawry Redirection URL Not Available');
-
+        $referenceNumber = data_get($responseData, 'referenceNumber');
+        if (!$referenceNumber || $responseData['statusCode'] != "200") throw new \Exception('Fawry invoice reference number not available');
         return [
+            'success' => true,
             'status' => PaymentStatus::PENDING,
-            'redirectUrl' => $redirectionUrl,
+            'shouldRedirect' => false,
+            'referenceNumber' => $referenceNumber,
         ];
     }
 
-    protected function generateSignature(array $fields): string
+    protected function generateSignature(array $data, ?array $fieldNames = null): string
     {
-        return hash('sha256', implode('', $fields));
+        if (!$fieldNames) return hash('sha256', implode('', $data));
+        return hash('sha256', array_reduce($fieldNames, function ($carry, $fieldName) use ($data) {
+            return $carry . data_get($data, $fieldName);
+        }, ''));
     }
 
     public function verify()

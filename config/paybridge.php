@@ -1,6 +1,5 @@
 <?php
 
-// config for AhmedTaha/PayBridge
 return [
     'gateways' => [
         'fawrypay' => [

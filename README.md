@@ -22,13 +22,6 @@ You can publish the config file with:
 php artisan vendor:publish --tag="paybridge-config"
 ```
 
-This is the contents of the published config file:
-
-```php
-return [
-];
-```
-
 ## Usage
 
 ```php

@@ -25,8 +25,20 @@ php artisan vendor:publish --tag="paybridge-config"
 ## Usage
 
 ```php
-$payBridge = new AhmedTaha\PayBridge();
-echo $payBridge->echoPhrase('Hello, AhmedTaha!');
+use PayBridge;
+use AhmedTaha\PayBridge\Enums\PaymentGateway;
+use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
+use AhmedTaha\PayBridge\Data\ChargeData;
+use AhmedTaha\PayBridge\Data\CustomerData;
+use AhmedTaha\PayBridge\Data\CreditCardData;
+
+$charge = new ChargeData('charge ID', 200, 'USD');
+$customer = new CustomerData('customer ID', 'Ahmed', 'phone', 'email@test.com');
+$paymentData = new CreditCardData('1234 1234 1234 1234', '24', '05', '123');
+
+PayBridge::setEnvironment(PaymentEnvironment::TESTING)
+    ->gateway(PaymentGateway::FawryPay)
+    ->pay($charge, $customer, $paymentData);
 ```
 
 ## Testing

@@ -13,7 +13,11 @@ class CreditCardData extends AbstractPaymentData
         protected string|int $expiryYear,
         protected string|int $expiryMonth,
         protected string|int $cvv,
-    ) {}
+    ) {
+        if (is_string($this->cardNumber)) {
+            $this->cardNumber = str_replace(' ', '', $this->cardNumber);
+        }
+    }
 
     public function getData(): array
     {

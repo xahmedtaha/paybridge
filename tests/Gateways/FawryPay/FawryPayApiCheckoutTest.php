@@ -1,6 +1,7 @@
 <?php
 
 use AhmedTaha\PayBridge\Enums\PaymentGateway;
+use AhmedTaha\PayBridge\Enums\PaymentMethod;
 use AhmedTaha\PayBridge\Enums\PaymentStatus;
 use AhmedTaha\PayBridge\PayBridge;
 use Illuminate\Support\Facades\Config;
@@ -16,7 +17,7 @@ beforeEach(function () use ($mockUrl) {
 
 it('can pay using credit card api checkout', function () use ($mockUrl) {
     $faker = fake();
-    $charge = new \AhmedTaha\PayBridge\Data\ChargeData($faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
+    $charge = new \AhmedTaha\PayBridge\Data\ChargeData(PaymentMethod::CREDIT_CARD, $faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
     $customer = new \AhmedTaha\PayBridge\Data\CustomerData($faker->uuid(), $faker->name(), $faker->phoneNumber(), $faker->safeEmail(), $faker->address());
     $paymentData = new \AhmedTaha\PayBridge\Data\Payment\CreditCardData($faker->creditCardNumber(), $faker->creditCardExpirationDate->format('y'), $faker->creditCardExpirationDate->format('m'), '123');
 
@@ -46,7 +47,7 @@ it('can pay using credit card api checkout', function () use ($mockUrl) {
 
 it('can throw errors on failed credit card api checkout', function () {
     $faker = fake();
-    $charge = new \AhmedTaha\PayBridge\Data\ChargeData($faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
+    $charge = new \AhmedTaha\PayBridge\Data\ChargeData(PaymentMethod::CREDIT_CARD, $faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
     $customer = new \AhmedTaha\PayBridge\Data\CustomerData($faker->uuid(), $faker->name(), $faker->phoneNumber(), $faker->safeEmail(), $faker->address());
     $paymentData = new \AhmedTaha\PayBridge\Data\Payment\CreditCardData($faker->creditCardNumber(), $faker->creditCardExpirationDate->format('y'), $faker->creditCardExpirationDate->format('m'), '123');
 

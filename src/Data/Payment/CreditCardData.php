@@ -6,16 +6,16 @@ use AhmedTaha\PayBridge\Enums\PaymentMethod;
 
 class CreditCardData extends AbstractPaymentData
 {
-    const METHOD = PaymentMethod::CREDIT_CARD;
+    public readonly string|int $cardNumber;
 
     public function __construct(
-        protected string|int $cardNumber,
-        protected string|int $expiryYear,
-        protected string|int $expiryMonth,
-        protected string|int $cvv,
+        string|int $cardNumber,
+        public readonly string|int $expiryYear,
+        public readonly string|int $expiryMonth,
+        public readonly string|int $cvv,
     ) {
-        if (is_string($this->cardNumber)) {
-            $this->cardNumber = str_replace(' ', '', $this->cardNumber);
+        if (is_string($cardNumber)) {
+            $this->cardNumber = str_replace(' ', '', $cardNumber);
         }
     }
 

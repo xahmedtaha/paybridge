@@ -7,11 +7,11 @@ use AhmedTaha\PayBridge\Interfaces\DataInterface;
 class CustomerData implements DataInterface
 {
     public function __construct(
-        protected string|int|null $id = null,
-        protected ?string $name = null,
-        protected ?string $phone = null,
-        protected ?string $email = null,
-        protected ?string $address = null,
+        public readonly string|int|null $id = null,
+        public readonly ?string $name = null,
+        public readonly ?string $phone = null,
+        public readonly ?string $email = null,
+        public readonly ?string $address = null,
     ) {}
 
     public function getData(): array

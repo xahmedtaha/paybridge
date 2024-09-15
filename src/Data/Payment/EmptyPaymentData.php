@@ -7,8 +7,6 @@ use AhmedTaha\PayBridge\Enums\PaymentMethod;
 // Used for when payment data isn't required or applicable (e.g. Hosted/Redirection Checkouts)
 class EmptyPaymentData extends AbstractPaymentData
 {
-    const METHOD = PaymentMethod::ANY;
-
     public function getData(): array
     {
         return [];

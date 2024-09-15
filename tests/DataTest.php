@@ -64,8 +64,8 @@ it('mobile wallet data is correctly set', function ($phoneNumber) {
 ]);
 
 it('placeholder payment data is correctly set', function () {
-    $data = new \AhmedTaha\PayBridge\Data\Payment\NoPaymentData();
+    $data = new \AhmedTaha\PayBridge\Data\Payment\EmptyPaymentData();
     expect($data::METHOD)
-        ->toBe(PaymentMethod::NONE)
+        ->toBe(PaymentMethod::ANY)
         ->and($data->getData())->toBe([]);
 });

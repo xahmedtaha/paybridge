@@ -7,7 +7,7 @@ return [
             'access_key' => env('FAWRYPAY_ACCESS_KEY'),
             'secret_key' => env('FAWRYPAY_SECRET_KEY'),
             'environment' => env('FAWRYPAY_ENVIRONMENT', 'testing'), // production or testing
-            'integration_type' => 'api', // hosted (redirect to fawrypay hosted checkout) or api (the app collects the payment data itself)
+            'integration_type' => env('FAWRYPAY_INTEGRATION_TYPE', 'api'), // hosted (redirect to fawrypay hosted checkout) or api (the app collects the payment data itself)
             'callback_url' => env('FAWRYPAY_CALLBACK_URL'),
         ],
     ],

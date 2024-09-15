@@ -5,7 +5,7 @@ namespace AhmedTaha\PayBridge\Gateways;
 use AhmedTaha\PayBridge\Data\ChargeData;
 use AhmedTaha\PayBridge\Data\CustomerData;
 use AhmedTaha\PayBridge\Data\Payment\AbstractPaymentData;
-use AhmedTaha\PayBridge\Data\Payment\NoPaymentData;
+use AhmedTaha\PayBridge\Data\Payment\EmptyPaymentData;
 use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
 use AhmedTaha\PayBridge\Enums\PaymentMethod;
 use AhmedTaha\PayBridge\Enums\PaymentStatus;
@@ -19,8 +19,7 @@ class FawryPayGateway extends AbstractGateway
 {
     protected array $supportedIntegrationTypes = ['hosted', 'api'];
 
-    // The "NONE" method corresponds to the PayAtFawry method in the api integration
-    protected array $supportedPaymentMethods = [PaymentMethod::CREDIT_CARD, PaymentMethod::MOBILE_WALLET, PaymentMethod::NONE];
+    protected array $supportedPaymentMethods = [PaymentMethod::CREDIT_CARD, PaymentMethod::MOBILE_WALLET, PaymentMethod::PAY_AT_FAWRY, PaymentMethod::ANY];
 
     protected string $apiUrl;
 
@@ -108,6 +107,13 @@ class FawryPayGateway extends AbstractGateway
             'returnUrl' => $this->getCallbackUrl(),
         ];
         if ($integrationType == 'hosted') {
+            if ($paymentData::METHOD != PaymentMethod::ANY) {
+                $data['paymentMethod'] = match ($paymentData::METHOD) {
+                    PaymentMethod::CREDIT_CARD => 'CARD',
+                    PaymentMethod::MOBILE_WALLET => 'MWALLET',
+                    PaymentMethod::PAY_AT_FAWRY => 'PayAtFawry',
+                };
+            }
             $data['signature'] = $this->generateSignature($data, [
                 'merchantCode',
                 'merchantRefNum',
@@ -161,7 +167,7 @@ class FawryPayGateway extends AbstractGateway
                     'debitMobileWalletNo',
                     'secretKey',
                 ]);
-            } else {
+            } else if ($paymentData::METHOD == PaymentMethod::PAY_AT_FAWRY) {
                 $data['paymentMethod'] = 'PAYATFAWRY';
                 $data['signature'] = $this->generateSignature($data, [
                     'merchantCode',
@@ -181,7 +187,7 @@ class FawryPayGateway extends AbstractGateway
      * @throws RequestException
      * @throws \Exception
      */
-    public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData = new NoPaymentData): array
+    public function pay(ChargeData $chargeData, CustomerData $customerData, AbstractPaymentData $paymentData = new EmptyPaymentData): array
     {
         if (! in_array($paymentData::METHOD, $this->supportedPaymentMethods)) {
             throw new \Exception('Unsupported Payment Method For FawryPay');

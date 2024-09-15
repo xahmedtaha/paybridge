@@ -6,17 +6,19 @@ use AhmedTaha\PayBridge\PayBridge;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 
-it('can pay using credit card api checkout', function () {
+$mockUrl = fake()->url();
+
+beforeEach(function () use ($mockUrl) {
+    Config::set('paybridge.gateways.fawrypay.integration_type', 'api');
+    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
+    Config::set('paybridge.gateways.fawrypay.callback_url', $mockUrl);
+});
+
+it('can pay using credit card api checkout', function () use ($mockUrl) {
     $faker = fake();
     $charge = new \AhmedTaha\PayBridge\Data\ChargeData($faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
     $customer = new \AhmedTaha\PayBridge\Data\CustomerData($faker->uuid(), $faker->name(), $faker->phoneNumber(), $faker->safeEmail(), $faker->address());
     $paymentData = new \AhmedTaha\PayBridge\Data\Payment\CreditCardData($faker->creditCardNumber(), $faker->creditCardExpirationDate->format('y'), $faker->creditCardExpirationDate->format('m'), '123');
-
-    $mockUrl = $faker->url();
-
-    Config::set('paybridge.gateways.fawrypay.integration_type', 'api');
-    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
-    Config::set('paybridge.gateways.fawrypay.callback_url', $faker->url());
 
     Http::fake([
         '*' => Http::response([
@@ -47,12 +49,6 @@ it('can throw errors on failed credit card api checkout', function () {
     $charge = new \AhmedTaha\PayBridge\Data\ChargeData($faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
     $customer = new \AhmedTaha\PayBridge\Data\CustomerData($faker->uuid(), $faker->name(), $faker->phoneNumber(), $faker->safeEmail(), $faker->address());
     $paymentData = new \AhmedTaha\PayBridge\Data\Payment\CreditCardData($faker->creditCardNumber(), $faker->creditCardExpirationDate->format('y'), $faker->creditCardExpirationDate->format('m'), '123');
-
-    $mockUrl = $faker->url();
-
-    Config::set('paybridge.gateways.fawrypay.integration_type', 'api');
-    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
-    Config::set('paybridge.gateways.fawrypay.callback_url', $faker->url());
 
     Http::fake([
         '*' => Http::response(['statusCode' => 500, 'statusDescription' => 'Random Error'], 500)
@@ -99,10 +95,6 @@ it('can handle fawry credit card api checkout callback', function () {
             'customerMobile',
         ])
     ]);
-
-    Config::set('paybridge.gateways.fawrypay.integration_type', 'api');
-    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
-    Config::set('paybridge.gateways.fawrypay.callback_url', $faker->url());
 
     $response = $fawry->callback($request);
     expect($response)

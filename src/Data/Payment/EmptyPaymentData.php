@@ -5,9 +5,9 @@ namespace AhmedTaha\PayBridge\Data\Payment;
 use AhmedTaha\PayBridge\Enums\PaymentMethod;
 
 // Used for when payment data isn't required or applicable (e.g. Hosted/Redirection Checkouts)
-class NoPaymentData extends AbstractPaymentData
+class EmptyPaymentData extends AbstractPaymentData
 {
-    const METHOD = PaymentMethod::NONE;
+    const METHOD = PaymentMethod::ANY;
 
     public function getData(): array
     {

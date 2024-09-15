@@ -6,17 +6,19 @@ use AhmedTaha\PayBridge\PayBridge;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 
-it('can pay using hosted checkout', function () {
+$mockUrl = fake()->url();
+
+beforeEach(function () use ($mockUrl) {
+    Config::set('paybridge.gateways.fawrypay.integration_type', 'hosted');
+    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
+    Config::set('paybridge.gateways.fawrypay.callback_url', $mockUrl);
+});
+
+it('can pay using hosted checkout', function () use ($mockUrl) {
     $faker = fake();
     $charge = new \AhmedTaha\PayBridge\Data\ChargeData($faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
     $customer = new \AhmedTaha\PayBridge\Data\CustomerData($faker->uuid(), $faker->name(), $faker->phoneNumber(), $faker->safeEmail(), $faker->address());
-    $paymentData = new \AhmedTaha\PayBridge\Data\Payment\NoPaymentData;
-
-    $mockUrl = $faker->url();
-
-    Config::set('paybridge.gateways.fawrypay.integration_type', 'hosted');
-    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
-    Config::set('paybridge.gateways.fawrypay.callback_url', $faker->url());
+    $paymentData = new \AhmedTaha\PayBridge\Data\Payment\EmptyPaymentData;
 
     Http::fake([
         '*' => Http::response($mockUrl)
@@ -37,13 +39,7 @@ it('can throw errors on failed hosted checkout', function () {
     $faker = fake();
     $charge = new \AhmedTaha\PayBridge\Data\ChargeData($faker->uuid(), $faker->numberBetween(1000, 9000), $faker->randomElement(array_keys(config('paybridge.currencies'))));
     $customer = new \AhmedTaha\PayBridge\Data\CustomerData($faker->uuid(), $faker->name(), $faker->phoneNumber(), $faker->safeEmail(), $faker->address());
-    $paymentData = new \AhmedTaha\PayBridge\Data\Payment\NoPaymentData;
-
-    $mockUrl = $faker->url();
-
-    Config::set('paybridge.gateways.fawrypay.integration_type', 'hosted');
-    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
-    Config::set('paybridge.gateways.fawrypay.callback_url', $faker->url());
+    $paymentData = new \AhmedTaha\PayBridge\Data\Payment\EmptyPaymentData;
 
     Http::fake([
         '*' => Http::response(['statusCode' => 500, 'statusDescription' => 'Random Error'], 500)
@@ -90,10 +86,6 @@ it('can handle fawry hosted checkout callback', function () {
             'customerMobile',
         ])
     ]);
-
-    Config::set('paybridge.gateways.fawrypay.integration_type', 'hosted');
-    Config::set('paybridge.gateways.fawrypay.environment', \AhmedTaha\PayBridge\Enums\PaymentEnvironment::TESTING->value);
-    Config::set('paybridge.gateways.fawrypay.callback_url', $faker->url());
 
     $response = $fawry->callback($request);
     expect($response)

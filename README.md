@@ -30,8 +30,9 @@ use AhmedTaha\PayBridge\Data\CustomerData;
 use AhmedTaha\PayBridge\Data\Payment\CreditCardData;
 use AhmedTaha\PayBridge\Enums\PaymentEnvironment;
 use AhmedTaha\PayBridge\Enums\PaymentGateway;
+use \AhmedTaha\PayBridge\Enums\PaymentMethod;
 
-$charge = new ChargeData('charge ID', 200, 'USD');
+$charge = new ChargeData(PaymentMethod::CREDIT_CARD, 'charge ID', 200, 'USD');
 $customer = new CustomerData('customer ID', 'Ahmed', 'phone', 'email@test.com');
 $paymentData = new CreditCardData('1234 1234 1234 1234', '24', '05', '123');
 
